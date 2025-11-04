@@ -1,17 +1,17 @@
 このファームウェアは試験的バージョンです。
 
 MSX-AUDIOのファームウェアです。
-I2S出力版なので別途、PCM5102等のI2S対応DACモジュールが必用です。
+I2S出力版なので別途、PCM5102等のI2S対応DACモジュールが必要です。
 
 音声データの生成にemu8950(great!)を使用しています。
 https://github.com/digital-sound-antiques/emu8950
 
 パナソニックFS-CA1との違い
 
-1. BIOSはクFS-CA1のものではなく後述のMSX-Audio BIOS v1.3bを使用します。
-2. Y8950の音声出力機能以外は一切機能しません。
-3. 外部RAM=256Kbyte、外部ROM=0Kbyteです。(外部記憶装置ははRAM固定です)
-4. ステータスのread時のみwaitがかかります。
+1. Y8950の音声出力機能以外は一切機能しません。
+2. FS-CA1内蔵ソフトウェアは起動出来ません。内蔵データも利用できません。
+3. 外部RAM=256Kbyte、外部ROM=0Kbyteです。(外部記憶装置はRAM固定です)
+4. ステータス/データのread時にwaitがかかります。
 
 結線方法
 
@@ -25,28 +25,20 @@ IO35    SCK(不必要な配線なので繋がなくても構いません)
 
 音声フォーマットは16ビット、モノラル2CH、サンプルレート49716Hzです。
 
-御注意①
+御注意
 MSXπ✨✨✨✨✨✨✨に配線を追加する必要があります。mod.jpgの通りに配線して下さい。
 配線を行なわないと割り込み信号を使用したプログラムが正常動作しません。
 basicでcall audioする場合以外は配線無しでも概ね大丈夫っぽいです。
 
-御注意➋
-データバスがきちんとプルアップされていないMSX機種の場合、起動時にハングする、call audioで異常動作する等の
-不具合が発生する場合があります。そのような機種で使用する場合はaudio_i2s.binの代わりにaudio_i2s_alt.binを使用して下さい。
-audio_i2s_alt.binはターボRに対応しません。ターボRでは使用しないで下さい。
-
 使用法
 
-1. audio_i2s.binファイルの後ろにMSX-AUDIOのROMファイルを連結します。
-
-ROMファイルはhttps://frs.badcoffee.info/tools.htmlの
-MSX-Audio BIOS v1.3bに含まれるmsxaudio13.OPL3_mono.romを使用します。
+1. audio_i2s.binファイルの後ろにFS-CA1のROMファイル(fs-ca1_CLEAN.rom)を連結します。
 
 unixのcatコマンドを使用する例
-$ cat audio_i2s.bin msxaudio13.OPL3_mono.rom > firmware.bin
+$ cat audio_i2s.bin fs-ca1_CLEAN.rom > firmware.bin
 
 windowsのcopyコマンドを使用する例
->copy /b audio_i2s.bin + msxaudio13.OPL3_mono.rom firmware.bin
+>copy /b audio_i2s.bin + fs-ca1_CLEAN.rom firmware.bin
 
 2. uf2conv.exeを用いて1で作成したfirmware.binをuf2ファイルに変換します。
 
@@ -67,11 +59,14 @@ MSXπ✨✨✨✨✨✨✨のBOOTSELボタンを押しながらPCとUSB接続し
 
 5. 書込みが終わったらPCから外します。
 
+メモリマップドIOポート仕様
+
+0x3fff(write) bit7-bit1: 未使用 bit0: 0(初期値)=後述IOポート無効 1=後述IOポート有効
+0x7fff(write) 上記のミラー
+
 IOポート仕様
 
-0xc0 (read) ステータス読み込み
 0xc0 (write) アドレス書込み
 0xc1 (write) データ書き込み
-
-audio_i2s_alt.binの場合は上記に加え
-0xe4-0xe7 (read) 0xffを返す(プルアップされたデータバスの再現)
+0xc0 (read) ステータス読み込み
+0xc1 (read) データ読み込み(常に0x00を返す)
